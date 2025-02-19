@@ -27,7 +27,7 @@ fn create_default_toml_file() -> anyhow::Result<()> {
     let toml_path = Path::new(DEFAULT_TOML_FILE);
     if !toml_path.exists() {
         let prefix = toml_path.parent().unwrap();
-        let _ = fs::create_dir_all(prefix);
+        fs::create_dir_all(prefix)?;
         let mut file = File::create(DEFAULT_TOML_FILE)?;
         file.write_all(DEFAULT_TOML_CONTENT.to_string().as_bytes())?;
         println!("create {} ok", DEFAULT_TOML_FILE);
@@ -96,8 +96,13 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         },
-        Err(_) => {
-            do_alias_command()?;
+        Err(err) => {
+            let second_arg = env::args().skip(1).collect::<Vec<_>>().join("");
+            if second_arg == "help" {
+                print!("{}", err);
+            } else {
+                do_alias_command()?;
+            }
         }
     }
 
