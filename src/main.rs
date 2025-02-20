@@ -98,7 +98,9 @@ fn main() -> anyhow::Result<()> {
         },
         Err(err) => {
             let second_arg = env::args().skip(1).collect::<Vec<_>>().join("");
-            if second_arg == "help" {
+            if vec!["help", "-h", "--help"].iter().any(|item| -> bool {
+                *item == second_arg
+            }) {
                 print!("{}", err);
             } else {
                 do_alias_command()?;
