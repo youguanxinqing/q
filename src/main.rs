@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, fs::{self, File}, io::Write, path::Path, process};
+use std::{collections::HashMap, env, fs::{self, File}, io::{self, Read, Write}, path::Path, process};
 use serde::Deserialize;
 use clap::{Parser, Subcommand};
 
@@ -11,6 +11,8 @@ const DEFAULT_TOML_CONTENT: &str = r#"group = [
 pub enum SecondCommandGroup {
     #[command(about="create default toml file.")]
     Init,
+    #[command(about="search keyword from help infp.")]
+    Search,
 }
 
 #[derive(Parser, Debug)]
@@ -73,9 +75,28 @@ fn print_help_info() -> anyhow::Result<()> {
     let content = fs::read_to_string(DEFAULT_TOML_FILE)?;
     let config: CommandMap = toml::from_str(&content)?;
     let help_text = config.group.iter().map(|one_command| -> String {
-        format!("{} \"{}\"", one_command.get("name").unwrap(), one_command.get("help").unwrap())
+        format!("[{}] \"{}\"", one_command.get("name").unwrap(), one_command.get("help").unwrap())
     }).collect::<Vec<String>>().join("\n");
     println!("{}", help_text);
+
+    Ok(())
+}
+
+fn search_help_info(keyword: String) -> anyhow::Result<()> {
+    let content = fs::read_to_string(DEFAULT_TOML_FILE)?;
+    let config: CommandMap = toml::from_str(&content)?;
+    let help_text = config.group.iter().map(|one_command| -> String {
+        format!("[{}] \"{}\"", one_command.get("name").unwrap(), one_command.get("help").unwrap())
+    }).filter(|command_string| -> bool {
+        command_string.contains(&keyword)
+    }).collect::<Vec<String>>().join("\n");
+    
+    if help_text.len() > 0 {
+        println!("{}", help_text);
+    } else {
+        println!("not found keyword: '{}'", keyword);
+    }
+
 
     Ok(())
 }
@@ -88,6 +109,15 @@ fn main() -> anyhow::Result<()> {
                     match second_command_group {
                         SecondCommandGroup::Init => {
                             create_default_toml_file()?
+                        },
+                        SecondCommandGroup::Search => {
+                            print!(">>> ");
+                            io::stdout().flush()?;
+                            
+                            let mut buffer = String::new();
+                            io::stdin().read_line(&mut buffer)?;
+                            let buffer = buffer.replace("\n", "");
+                            search_help_info(buffer)?;
                         }
                     }
                 },
